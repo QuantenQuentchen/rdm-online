@@ -1,10 +1,14 @@
 package org.rdm.online.db
 
+import org.rdm.online.db.auth.AuthDB
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.rdm.online.db.user.UserDB
+import org.rdm.online.db.funding.FundableDB
 import org.sqlite.Function
+import org.rdm.online.db.awards.AwardsDB
 import java.sql.Connection
 import java.sql.DriverManager
 import java.text.Normalizer
@@ -12,7 +16,15 @@ import java.text.Normalizer
 object DB {
     private var initializedPath: String? = null
 
-    fun initialize(databasePath: String = Config.DB_PATH) {
+
+    // sqlite-jdbc applies these on every connection. They replace the Go connection hook
+    // (foreign_keys, busy_timeout, synchronous), the WAL pragma and `_txlock=immediate`.
+    // This is the only SQLite-specific line: swap URL + driver for Postgres and drop the params.
+    private const val URL =
+        "jdbc:sqlite:data.db?journal_mode=WAL&busy_timeout=5000&synchronous=NORMAL" +
+                "&foreign_keys=true&transaction_mode=IMMEDIATE"
+
+    fun initialize(databasePath: String = "data.db") {
         if (initializedPath == databasePath) return
 
         println("Initializing database at $databasePath")
@@ -21,7 +33,12 @@ object DB {
             getNewConnection = {
                 DriverManager
                     .getConnection("jdbc:sqlite:$databasePath")
-                    .also { registerUnicodeFunctions(it) }
+                    .also {
+                        registerUnicodeFunctions(it)
+                        it.createStatement().use { statement ->
+                            statement.execute("PRAGMA foreign_keys=ON")
+                        }
+                    }
             }
         )
 
@@ -29,7 +46,6 @@ object DB {
             tx.connection.autoCommit = true
             tx.exec("PRAGMA journal_mode=WAL;")
             //tx.exec("PRAGMA synchronous=NORMAL;")
-            //tx.exec("PRAGMA foreign_keys=ON;")
             tx.connection.autoCommit = false
             tx.commit()
             tx.close()
@@ -37,43 +53,23 @@ object DB {
 
         transaction(db) {
             SchemaUtils.create(
-                FileDB.Files,
+                UserDB.Users,
 
-                GlobData.GlobalData,
-                GlobData.GlobalAncillary,
+                AuthDB.Sessions,
 
-                PresetDB.Presets,
-                PresetDB.ColorMaps,
-                PresetDB.Equations,
-                PresetDB.Slices,
+                AwardsDB.Categories,
+                AwardsDB.Suggestions,
 
-                Solution.Solutions,
-
-                SolutionSession.SolutionSessions,
-                SolutionSession.RenderCommand,
-                SolutionSession.CommandQueue,
-                SolutionSession.RenderQueue,
-
-                Tags.Tags,
-                Tags.SolutionTags,
-                Tags.PresetTags,
-
-                User.Users,
-                User.SessionAccess,
-                User.UserSettings,
-
-                SettingsDB.AutoPresets,
-                MetaDB.Initialized
+                FundableDB.PaymentSchedules,
+                FundableDB.Fundables,
+                FundableDB.Components,
+                FundableDB.ComponentInterests,
+                FundableDB.ComponentCommitments,
+                FundableDB.Categories,
+                FundableDB.ToCategories
             )
         }
         initializedPath = databasePath
-        if (!MetaDB.wasStartedUp()) onFirstStartup()
-    }
-
-    private fun onFirstStartup() {
-        corneringTagId = Tags.getOrCreateTag("Cornering")
-        DefaultColorMaps.registerPredefinedColorMaps()
-        MetaDB.setStartupSucceeded(true)
     }
 
     private fun registerUnicodeFunctions(connection: Connection) {

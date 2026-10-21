@@ -5,7 +5,7 @@ plugins {
     application
     kotlin("jvm") version "2.4.20"
     kotlin("plugin.serialization") version "2.4.20"
-    id("io.ktor.plugin") version "3.5.0"
+    id("io.ktor.plugin") version "3.5.1"
 }
 
 group = "org.rdm.online"
@@ -25,27 +25,36 @@ dependencies {
     * Ktor
     */
     // Status pages plugin (provides StatusPages)
-    implementation("io.ktor:ktor-server-status-pages:${ktorVersion}")
+    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     // Plugin for integration for kotlinx.serialization
-    implementation("io.ktor:ktor-server-content-negotiation:${ktorVersion}")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:${ktorVersion}")
-    implementation("io.ktor:ktor-server-core:${ktorVersion}")
-    implementation("io.ktor:ktor-server-netty:${ktorVersion}")
-    implementation("io.ktor:ktor-server-sse:${ktorVersion}")
-    implementation("io.ktor:ktor-server-openapi:${ktorVersion}")
-    implementation("io.ktor:ktor-server-routing-openapi:${ktorVersion}")
-    implementation("io.ktor:ktor-server-swagger:${ktorVersion}")
-    implementation("io.ktor:ktor-server-cors:${ktorVersion}")
-    testImplementation("io.ktor:ktor-server-test-host:${ktorVersion}")
-    testImplementation("io.ktor:ktor-client-core:${ktorVersion}")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("io.ktor:ktor-server-core:$ktorVersion")
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-server-sse:$ktorVersion")
+    implementation("io.ktor:ktor-server-openapi:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth:${ktorVersion}") // includes OAuth
+    implementation("io.ktor:ktor-server-routing-openapi:$ktorVersion")
+    implementation("io.ktor:ktor-server-swagger:$ktorVersion")
+    implementation("io.ktor:ktor-server-cors:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-core:$ktorVersion")
+    //Client
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
 
+    //Discord
+    implementation("dev.kord:kord-rest:0.15.0")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.0")
     /*
     * Exposed (for the crime of writing JVM code)
     */
-    implementation("org.jetbrains.exposed:exposed-core:${exposedVersion}")
-    implementation("org.jetbrains.exposed:exposed-jdbc:${exposedVersion}")
-    implementation("org.jetbrains.exposed:exposed-dao:${exposedVersion}")
-    implementation("org.xerial:sqlite-jdbc:3.46.1.3")
+    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
+    implementation("org.xerial:sqlite-jdbc:3.50.3.0")
 
     implementation("org.jetbrains.kotlinx:kotlinx-cli-jvm:0.3.6")
 
@@ -67,8 +76,8 @@ ktor {
         onlyCommented = false
     }
 }
-//Why do this ? Because windows
-/*val npm = if (System.getProperty("os.name").lowercase().contains("win")) {
+
+val npm = if (System.getProperty("os.name").lowercase().contains("win")) {
     "npm.cmd"
 } else {
     "npm"
@@ -135,7 +144,7 @@ tasks.register("packageRelease") {
     description = "Package the backend into a fat jar for release"
     group = "custom-deploy"
     dependsOn("shadowJar")
-}*/
+}
 
 tasks.test {
     useJUnitPlatform()

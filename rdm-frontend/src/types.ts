@@ -1,0 +1,157 @@
+/** Everything the backend hands us, in one place. */
+
+/**
+ * Category/suggestion ids may be numeric (Go int64) or string, depending on
+ * the entity. Kept intentionally loose — always compare/key by `String(id)`
+ * so the frontend doesn't care which one a given backend table actually uses.
+ */
+export type EntityId = string | number
+
+export interface User {
+  id: string
+  displayName: string
+  username?: string | null
+  avatarUrl?: string | null
+  roles?: string[]
+}
+
+/** The admin endpoints return the same shape under a different Go type name
+ *  (`UserReply`). Kept as a separate alias so a future divergence doesn't
+ *  silently break both call sites at once. */
+export type UserReply = User
+
+export interface Category {
+  id: EntityId
+  name: string
+  order: number
+    /** Optional longer description, shown when the panel is open. */
+  description?: string
+  /** One line of "what counts" guidance, shown when the panel is open. */
+  criteria?: string
+  /** Submissions closed — entries become read-only. */
+  locked?: boolean
+  /** Per-user cap for this category; overrides the app default. */
+  maxSuggestions?: number
+}
+
+/** What the admin category form sends — no `id`, that's tracked separately
+ *  by the upsert wrapper (`null` means "create"). */
+export type CategoryInput = Omit<Category, 'id'>
+
+export interface Suggestion {
+  id: EntityId
+  categoryId: EntityId
+  text: string
+  updatedAt?: string
+}
+
+export interface SuggestionReorderRequest {
+  order: Map<EntityId, number>
+}
+
+/** A row in the editor. `id` is null until the backend assigns one. */
+export interface SuggestionDraft {
+  id: EntityId | null
+  text: string
+}
+
+/* --- response envelopes ------------------------------------------------- */
+
+export interface SessionResponse {
+  user: User
+}
+
+export interface AdminStatusResponse {
+  isAdmin: boolean
+}
+
+export interface PaymentSchedule {
+  type: 'one_time' | 'recurring' | string
+  intervalMonths?: number | null
+  occurrences?: number | null
+}
+
+export interface FundableOrigin {
+  type: 'council_resolution' | 'proposal' | 'other' | string
+  id: string | number | null
+  title: string | null
+  url: string | null
+}
+
+export interface FundableRevision {
+  id: string | number
+  editedAt: string
+  editedBy: string | number | null
+  summary: string
+}
+
+export interface FundableComponent {
+  id: number
+  publicId?: string | null
+  fundableId: number
+  name: string
+  description: string | null
+  useOfFunds?: string | null
+  createdAt?: string | null
+  updatedAt?: string | null
+  editHistory?: FundableRevision[]
+  amountCent: number
+  paymentSchedule: PaymentSchedule
+  interestedCount: number
+  committedCount: number
+  totalCommittedAmount: number
+  fullyFunded: boolean
+  amountCommitted: number
+  lifetimeCost: number
+  equalDivisionOnRemaining: number
+  projectedOverFundReturnPP: number | null
+}
+
+export interface CommitmentRequest {
+  userId: number
+  amountCents: number
+  paymentSchedule: { type: 'one_time' }
+}
+
+export interface Fundable {
+  id: number
+  publicId?: string | null
+  name: string
+  title: string
+  description: string | null
+  origin?: FundableOrigin | null
+  createdBy?: string | number | null
+  createdAt?: string | null
+  updatedAt?: string | null
+  editHistory?: FundableRevision[]
+  components: FundableComponent[]
+  fullyFunded: boolean
+}
+
+/** List endpoints may return a bare array or a wrapped object. */
+export type ListPayload<T> = T[] | { data?: T[]; [key: string]: unknown }
+
+/* --- admin --------------------------------------------------------------- */
+
+export interface NominationSuggestionRich {
+  suggestion: Suggestion
+  user: UserReply
+}
+
+export interface ViewAllSuggestionsResponse {
+  suggestions: NominationSuggestionRich[]
+}
+
+export interface CategorySuggestionsResponse {
+  suggestions: NominationSuggestionRich[]
+}
+
+export interface CategoryUpsertRequest {
+  /** null creates a new category; an id updates that one. */
+  id: EntityId | null
+  category: CategoryInput
+}
+
+export interface CategoryDeletionRequest {
+  id: EntityId
+}
