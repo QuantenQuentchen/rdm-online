@@ -34,7 +34,16 @@ import org.rdm.online.api.net.events.ApplicationEvent
 import org.rdm.online.api.net.events.EventService
 
 fun Route.fundableRoutes(auth: AuthService, events: EventService) {
+    /**
+     * Fundable REST API.
+     *
+     * Reads use the derived in-memory snapshot cache. Successful writes refresh
+     * that cache, append a fundable edit record, and dispatch a scoped event.
+     * All endpoints require a valid session; creation additionally requires admin
+     * authorization.
+     */
     route("/api/rest/fundable") {
+        /** Lists cached fundable snapshots visible to authenticated users. */
         get {
             auth.requireUser(call)
             call.respond(
@@ -43,6 +52,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
             )
         }
 
+        /** Creates a fundable and its initial components. */
         post {
             auth.requireAdmin(call)
             val request = call.receive<CreateFundableRequest>()
@@ -55,6 +65,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
         }
 
         route("/{fundableId}") {
+            /** Returns one cached fundable snapshot, or 404 when it does not exist. */
             get {
                 auth.requireUser(call)
                 val fundableId = call.parameters["fundableId"].asIdOrNull()
@@ -65,6 +76,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
             }
 
             //I don't know if this endpoint should exist at all
+            /** Permanently removes a fundable and records the deletion in its edit history. */
             delete {
                 val userID = auth.requireUser(call)
                 val fundableId = call.parameters["fundableId"].asIdOrNull()
@@ -76,6 +88,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
                 call.respond(HttpStatusCode.NoContent)
             }
 
+            /** Adds a component and returns the refreshed cached fundable. */
             post("/components") {
                 val userID = auth.requireUser(call)
                 val fundableId = call.parameters["fundableId"].asIdOrNull()
@@ -90,6 +103,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
         }
 
         route("/components/{componentId}") {
+            /** Returns one cached component with derived funding counters. */
             get {
                 auth.requireUser(call)
                 val componentId = call.parameters["componentId"].asIdOrNull()
@@ -99,6 +113,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
                 call.respond(FundableDerived.getCachedFundableComponent(componentId).toReply())
             }
 
+            /** Removes a component and its dependent commitments. */
             delete {
                 val userID = auth.requireUser(call)
                 val componentId = call.parameters["componentId"].asIdOrNull()
@@ -111,6 +126,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
                 call.respond(HttpStatusCode.NoContent)
             }
 
+            /** Creates an independent commitment; one user may have multiple commitments. */
             post("/commitments") {
                 val userId = auth.requireUser(call)
                 val componentId = call.parameters["componentId"].asIdOrNull()
@@ -127,6 +143,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
                 call.respond(HttpStatusCode.Created, IdReply(commitmentId))
             }
 
+            /** Registers the authenticated user as interested in this component. */
             post("/interests") {
                 val userId = auth.requireUser(call)
                 val componentId = call.parameters["componentId"].asIdOrNull()
@@ -139,6 +156,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
                 call.respond(FundableDerived.getCachedFundableComponent(componentId).toReply())
             }
 
+            /** Removes only the authenticated user's interest. */
             delete("/interests/{userId}") {
                 val authenticatedUserId = auth.requireUser(call)
                 val componentId = call.parameters["componentId"].asIdOrNull()
@@ -159,6 +177,7 @@ fun Route.fundableRoutes(auth: AuthService, events: EventService) {
             }
         }
 
+        /** Withdraws one commitment by its immutable commitment ID. */
         post("/commitments/{commitmentId}/withdraw") {
             auth.requireUser(call)
             val commitmentId = call.parameters["commitmentId"].asIdOrNull()

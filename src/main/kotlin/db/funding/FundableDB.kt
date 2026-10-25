@@ -36,8 +36,11 @@ import org.rdm.online.db.mustPositiveOrNull
 import org.rdm.online.db.perms.ScopedPermDB
 import org.rdm.online.db.sqliteMax
 import org.rdm.online.state.FundableDerived
+import org.rdm.online.logic.service.FundableHistoryService
+import kotlinx.serialization.json.JsonPrimitive
 
 object FundableDB {
+    private val history = FundableHistoryService()
 
     object Fundables : Table("fundables") {
         val id = long("id").autoIncrement().uniqueIndex()
@@ -359,6 +362,7 @@ object FundableDB {
             fundableID
         }
         FundableDerived.refreshFundable(fundableId)
+        history.record(fundableId, userID, "CREATED", JsonPrimitive("fundable created"))
         return fundableId
     }
 
@@ -382,6 +386,7 @@ object FundableDB {
             }
         }
         FundableDerived.invalidateFundable(fundableId)
+        history.record(fundableId, userID, "DELETED", JsonPrimitive("fundable deleted"))
     }
 
     fun addFundableComponent(userID: Long, fundableId: Long, component: FundableComponent): Long {
@@ -391,6 +396,7 @@ object FundableDB {
             addFundableComponentInTransaction(userID, fundableId, component)
         }
         FundableDerived.refreshFundable(fundableId)
+        history.record(fundableId, userID, "COMPONENT_ADDED", JsonPrimitive(componentId))
         return componentId
     }
 
@@ -424,6 +430,7 @@ object FundableDB {
             component[Components.fundableId]
         }
         FundableDerived.refreshFundable(fundableId)
+        history.record(fundableId, userID, "COMPONENT_REMOVED", JsonPrimitive(fundableComponentId))
     }
 
 /*

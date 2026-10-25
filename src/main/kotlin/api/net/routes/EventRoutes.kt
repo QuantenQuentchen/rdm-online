@@ -13,6 +13,13 @@ import org.rdm.online.api.net.events.EventService
 import org.rdm.online.rdm.auth.AuthService
 
 fun Route.eventRoutes(auth: AuthService, events: EventService) {
+    /**
+     * Opens an authenticated Server-Sent Events stream.
+     *
+     * Repeat the `scope` query parameter to subscribe to several scopes, for
+     * example `scope=fundable:12&scope=awards`. If a bounded subscriber queue
+     * overflows, the service emits `Resync` and closes the stream.
+     */
     route("/api/events") {
         sse {
             val userId = auth.requireUser(call)

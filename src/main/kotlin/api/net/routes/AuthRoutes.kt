@@ -21,9 +21,11 @@ fun Route.authRoutes(auth: AuthService, discord: DiscordService) {
 
     authenticate(DISCORD_OAUTH) {
         // Ktor's OAuth provider answers this itself with the redirect to Discord.
+        /** Starts the Discord OAuth login redirect. */
         anyMethod("/api/auth/discord/login") {}
 
         // The provider has already verified `state` and exchanged the code by the time we get here.
+        /** Completes OAuth, validates the state cookie, and creates a local session. */
         anyMethod("/api/auth/discord/callback") {
             val principal = call.principal<OAuthAccessTokenResponse.OAuth2>()
                 ?: throw BadRequestException("login failed")
@@ -51,6 +53,7 @@ fun Route.authRoutes(auth: AuthService, discord: DiscordService) {
         }
     }
 
+    /** Returns the authenticated user's session profile. */
     anyMethod("/api/auth/session") {
         val id = auth.requireUser(call, "nope!")
         val user = UserDB.userById(id)
@@ -58,6 +61,7 @@ fun Route.authRoutes(auth: AuthService, discord: DiscordService) {
         call.respond(SessionReply(discord.userReply(user.discordId)))
     }
 
+    /** Invalidates the current session cookie. */
     anyMethod("/api/auth/logout") {
         val token = call.request.cookies[SESSION_COOKIE]
             ?: throw BadRequestException("no authorization token provided")
@@ -73,6 +77,7 @@ fun Route.authRoutes(auth: AuthService, discord: DiscordService) {
         call.respond(HttpStatusCode.OK)
     }
 
+    /** Returns whether the authenticated user currently has administrator access. */
     anyMethod("/api/auth/admin") {
         val id = auth.requireUser(call, "nope!")
         val user = UserDB.userById(id) ?: throw NotFoundException("user not found")

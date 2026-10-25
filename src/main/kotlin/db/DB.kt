@@ -9,6 +9,10 @@ import org.rdm.online.db.user.UserDB
 import org.rdm.online.db.funding.FundableDB
 import org.sqlite.Function
 import org.rdm.online.db.awards.AwardsDB
+import org.rdm.online.db.proposal.ProposalDB
+import org.rdm.online.db.perms.PermissionDB
+import org.rdm.online.db.events.OutboxDB
+import org.rdm.online.db.funding.FundableHistoryDB
 import java.sql.Connection
 import java.sql.DriverManager
 import java.text.Normalizer
@@ -66,7 +70,25 @@ object DB {
                 FundableDB.ComponentInterests,
                 FundableDB.ComponentCommitments,
                 FundableDB.Categories,
-                FundableDB.ToCategories
+                FundableDB.ToCategories,
+
+                ProposalDB.Proposals,
+                ProposalDB.ProposalSessions,
+                ProposalDB.ProposalEvents,
+                ProposalDB.ProposalVotes,
+                ProposalDB.CurrentState,
+                ProposalDB.VetoPermissions,
+                ProposalDB.VetoEvents,
+
+                PermissionDB.Grants,
+                PermissionDB.Events,
+                PermissionDB.CurrentState,
+                PermissionDB.Dependencies,
+                PermissionDB.RoleAssignments,
+                PermissionDB.RoleRemovalConditions,
+
+                OutboxDB.Events,
+                FundableHistoryDB.Edits
             )
         }
         initializedPath = databasePath

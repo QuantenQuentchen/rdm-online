@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.rdm.online.db.funding.FundableDB.Fundables
+import org.rdm.online.db.proposal.ProposalDB
 import org.rdm.online.db.user.UserDB.Users
 
 object ScopedPermDB {
@@ -20,6 +21,14 @@ object ScopedPermDB {
         override val primaryKey = PrimaryKey(fundableID, userID)
     }
 
+
+    object PermissionOrigins : Table("perms_origins") {
+        val id = long("id").autoIncrement()
+        val proposalID = long("proposal_id").references(ProposalDB.Proposals.id)
+
+        val roleActionID = long("role_action_id").references(ProposalDB.ProposalEvents.id)
+
+    }
 
     //Transaction caller handled
     fun canEdit(userID: Long, fundableID: Long): Boolean {

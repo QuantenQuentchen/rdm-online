@@ -31,11 +31,13 @@ import org.rdm.online.api.net.events.EventService
 
 fun Route.awardsRoutes(auth: AuthService, discord: DiscordService, events: EventService) {
 
+    /** Lists award categories. */
     anyMethod("/api/awards/categories") {
         call.respond(CategoriesReply(AwardsDB.categories().map { it.toReply() }))
     }
 
     route("/api/awards/categories/{categoryID}/suggestions") {
+        /** Lists suggestions in a category with Discord profile enrichment. */
         get {
             auth.requireUser(call)
             val categoryId = call.categoryId()
@@ -44,6 +46,7 @@ fun Route.awardsRoutes(auth: AuthService, discord: DiscordService, events: Event
             call.respond(RichSuggestionsReply(discord.rich(AwardsDB.suggestionsIn(categoryId))))
         }
 
+        /** Replaces the authenticated user's suggestions for a category. */
         put {
             val userId = auth.requireUser(call)
             val categoryId = call.categoryId()
@@ -61,6 +64,7 @@ fun Route.awardsRoutes(auth: AuthService, discord: DiscordService, events: Event
         }
     }
 
+    /** Lists suggestions submitted by the authenticated user. */
     anyMethod("/api/awards/suggestions/mine") {
         val userId = auth.requireUser(call)
         call.respond(SuggestionsReply(AwardsDB.suggestionsOf(userId).map { it.toReply() }))
@@ -68,11 +72,13 @@ fun Route.awardsRoutes(auth: AuthService, discord: DiscordService, events: Event
 
     // ---- admin ------------------------------------------------------------
 
+    /** Lists all suggestions; restricted to administrators. */
     anyMethod("/api/admin/viewSuggestions") {
         auth.requireAdmin(call)
         call.respond(RichSuggestionsReply(discord.rich(AwardsDB.allSuggestions())))
     }
 
+    /** Creates or updates an award category; restricted to administrators. */
     anyMethod("/api/admin/upsert/Categories") {
         auth.requireAdmin(call)
         val req = call.receiveOrBadRequest<CategoryUpsertRequest>()
@@ -82,6 +88,7 @@ fun Route.awardsRoutes(auth: AuthService, discord: DiscordService, events: Event
         call.respond(HttpStatusCode.OK)
     }
 
+    /** Deletes an award category; restricted to administrators. */
     anyMethod("/api/admin/delete/Categories") {
         auth.requireAdmin(call)
         val req = call.receiveOrBadRequest<CategoryDeletionRequest>()

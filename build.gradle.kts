@@ -42,6 +42,7 @@ dependencies {
     //Client
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("ch.qos.logback:logback-classic:1.5.32")
 
     //Discord
     implementation("dev.kord:kord-rest:0.15.0")
@@ -83,23 +84,31 @@ val npm = if (System.getProperty("os.name").lowercase().contains("win")) {
     "npm"
 }
 
+tasks.register<Exec>("frontendNpmInstall") {
+    description = "Install Frontend dependencies using npm"
+    workingDir("./rdm-frontend")
+    commandLine(npm, "install")
+}
+
 tasks.register<Exec>("frontendNpmCi") {
     description = "Run Frontend ci/cd (we might not have it but I found the ci command and this seems professional)"
-    workingDir("../")
+    dependsOn("frontendNpmInstall")
+    workingDir("./rdm-frontend")
     commandLine(npm, "ci")
 }
 
 tasks.register<Exec>("frontendBuild") {
     description = "Build the frontend using npm"
     dependsOn("frontendNpmCi")
-    workingDir("../")
+    workingDir("./rdm-frontend")
     commandLine(npm, "run", "build")
 }
 
 tasks.named<ProcessResources>("processResources") {
     dependsOn("frontendBuild")
 
-    from(layout.projectDirectory.dir("../dist")) {
+
+    from(layout.projectDirectory.dir("./rdm-frontend/dist")) {
         into("generated/dist")
     }
 }
